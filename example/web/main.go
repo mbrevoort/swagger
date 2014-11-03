@@ -8,8 +8,9 @@
 package main
 
 import (
-	"github.com/yvasiyarov/swagger/example"
 	"net/http"
+
+	"github.com/mbrevoort/swagger/example"
 )
 
 func main() {

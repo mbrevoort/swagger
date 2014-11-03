@@ -1,11 +1,12 @@
 package parser_test
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
-	"github.com/yvasiyarov/swagger/parser"
 	"strings"
 	"testing"
+
+	"github.com/mbrevoort/swagger/parser"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 type OperationSuite struct {

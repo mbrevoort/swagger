@@ -3,12 +3,13 @@ package markup
 import (
 	"bytes"
 	"fmt"
-	"github.com/yvasiyarov/swagger/parser"
 	"log"
 	"os"
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/mbrevoort/swagger/parser"
 )
 
 type Markup interface {

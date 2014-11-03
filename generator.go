@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/yvasiyarov/swagger/markup"
-	"github.com/yvasiyarov/swagger/parser"
 	"go/ast"
 	"log"
 	"os"
 	"path"
 	"regexp"
 	"strings"
+
+	"github.com/mbrevoort/swagger/markup"
+	"github.com/mbrevoort/swagger/parser"
 )
 
 const (

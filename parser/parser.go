@@ -217,6 +217,11 @@ func (parser *Parser) ScanPackages(packages []string) []string {
 			// Then walk
 			var walker filepath.WalkFunc = func(path string, info os.FileInfo, err error) error {
 				if info.IsDir() {
+
+					// Ignore anything under a ./Godeps directory
+					if idx := strings.Index(path, pkgRealPath+"/Godeps/"); idx != -1 {
+						return nil
+					}
 					if idx := strings.Index(path, packageName); idx != -1 {
 						pack := path[idx:]
 						if v, ok := existsPackages[pack]; !ok || v == false {
