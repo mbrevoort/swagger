@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"go/ast"
 	"log"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 
 	"github.com/mbrevoort/swagger/markup"
@@ -22,40 +20,67 @@ const (
 
 var apiPackage = flag.String("apiPackage", "", "The package that implements the API controllers, relative to $GOPATH/src")
 var mainApiFile = flag.String("mainApiFile", "", "The file that contains the general API annotations, relative to $GOPATH/src")
-var basePath = flag.String("basePath", "http://127.0.0.1:3000", "Web service base path")
+var basePath = flag.String("basePath", "", "Web service base path")
 var outputFormat = flag.String("format", "go", "Output format type for the generated files: "+AVAILABLE_FORMATS)
 var outputSpec = flag.String("output", "", "Output (path) for the generated file(s)")
-var controllerClass = flag.String("controllerClass", "", "Speed up parsing by specifying which receiver objects have the controller methods")
 
 var generatedFileTemplate = `
 package main
-//This file is generated automatically. Do not try to edit it manually.
+//This file is generated automatically. Do not edit it manually.
 
-var resourceListingJson = {{resourceListing}}
-var apiDescriptionsJson = {{apiDescriptions}}
+import (
+	"net/http"
+	"strings"
+)
+
+func swaggerApiHandler(prefix string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resource := strings.TrimPrefix(r.RequestURI, prefix)
+		resource = strings.Trim(resource, "/")
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET")
+
+		if resource == "" {
+			w.Write([]byte(swaggerResourceListing))
+			return
+		}
+
+		if json, ok := swaggerApiDescriptions[resource]; ok {
+			w.Write([]byte(json))
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}
+}
+
+
+var swaggerResourceListing = {{resourceListing}}
+var swaggerApiDescriptions = {{apiDescriptions}}
 `
 
 // It must return true if funcDeclaration is controller. We will try to parse only comments before controllers
 func IsController(funcDeclaration *ast.FuncDecl) bool {
-	if len(*controllerClass) == 0 {
-		// Search every method
-		return true
-	}
-	if funcDeclaration.Recv != nil && len(funcDeclaration.Recv.List) > 0 {
-		if starExpression, ok := funcDeclaration.Recv.List[0].Type.(*ast.StarExpr); ok {
-			receiverName := fmt.Sprint(starExpression.X)
-			matched, err := regexp.MatchString(string(*controllerClass), receiverName)
-			if err != nil {
-				log.Fatalf("The -controllerClass argument is not a valid regular expression: %v\n", err)
-			}
-			return matched
-		}
-	}
-	return false
+	return true
+	// if len(*controllerClass) == 0 {
+	// 	// Search every method
+	// 	return true
+	// }
+	// if funcDeclaration.Recv != nil && len(funcDeclaration.Recv.List) > 0 {
+	// 	if starExpression, ok := funcDeclaration.Recv.List[0].Type.(*ast.StarExpr); ok {
+	// 		receiverName := fmt.Sprint(starExpression.X)
+	// 		matched, err := regexp.MatchString(string(*controllerClass), receiverName)
+	// 		if err != nil {
+	// 			log.Fatalf("The -controllerClass argument is not a valid regular expression: %v\n", err)
+	// 		}
+	// 		return matched
+	// 	}
+	// }
+	// return false
 }
 
 func generateSwaggerDocs(parser *parser.Parser) {
-	fd, err := os.Create(path.Join("./", "docs.go"))
+	fd, err := os.Create(path.Join("./", "swaggerSpec.go"))
 	if err != nil {
 		log.Fatalf("Can not create document file: %v\n", err)
 	}
