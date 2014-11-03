@@ -10,7 +10,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/mbrevoort/swagger/markup"
 	"github.com/mbrevoort/swagger/parser"
 )
 
@@ -21,7 +20,6 @@ const (
 var apiPackage = flag.String("apiPackage", "", "The package that implements the API controllers, relative to $GOPATH/src")
 var mainApiFile = flag.String("mainApiFile", "", "The file that contains the general API annotations, relative to $GOPATH/src")
 var basePath = flag.String("basePath", "", "Web service base path")
-var outputFormat = flag.String("format", "go", "Output format type for the generated files: "+AVAILABLE_FORMATS)
 var outputSpec = flag.String("output", "", "Output (path) for the generated file(s)")
 
 var generatedFileTemplate = `
@@ -105,30 +103,6 @@ func generateSwaggerDocs(parser *parser.Parser) {
 	fd.WriteString(doc)
 }
 
-func generateSwaggerUiFiles(parser *parser.Parser) {
-	fd, err := os.Create(path.Join(*outputSpec, "index.json"))
-	if err != nil {
-		log.Fatalf("Can not create the master index.json file: %v\n", err)
-	}
-	defer fd.Close()
-	fd.WriteString(string(parser.GetResourceListingJson()))
-
-	for apiKey, apiDescription := range parser.TopLevelApis {
-		err = os.MkdirAll(path.Join(*outputSpec, apiKey), 0777)
-		fd, err = os.Create(path.Join(*outputSpec, apiKey, "index.json"))
-		if err != nil {
-			log.Fatalf("Can not create the %s/index.json file: %v\n", apiKey, err)
-		}
-		defer fd.Close()
-		json, err := json.MarshalIndent(apiDescription, "", "    ")
-		if err != nil {
-			log.Fatalf("Can not serialise []ApiDescription to JSON: %v\n", err)
-		}
-		fd.Write(json)
-		log.Printf("Wrote %v/index.json", apiKey)
-	}
-}
-
 func InitParser() *parser.Parser {
 	parser := parser.NewParser()
 
@@ -165,25 +139,6 @@ func main() {
 	parser.ParseApi(*apiPackage)
 	log.Println("Finish parsing")
 
-	format := strings.ToLower(*outputFormat)
-	switch format {
-	case "go":
-		generateSwaggerDocs(parser)
-		log.Println("Doc file generated")
-	case "asciidoc":
-		markup.GenerateMarkup(parser, new(markup.MarkupAsciiDoc), outputSpec, ".adoc")
-		log.Println("AsciiDoc file generated")
-	case "markdown":
-		markup.GenerateMarkup(parser, new(markup.MarkupMarkDown), outputSpec, ".md")
-		log.Println("MarkDown file generated")
-	case "confluence":
-		markup.GenerateMarkup(parser, new(markup.MarkupConfluence), outputSpec, ".confluence")
-		log.Println("Confluence file generated")
-	case "swagger":
-		generateSwaggerUiFiles(parser)
-		log.Println("Swagger UI files generated")
-	default:
-		log.Fatalf("Invalid -format specified. Must be one of %v.", AVAILABLE_FORMATS)
-	}
+	generateSwaggerDocs(parser)
 
 }
