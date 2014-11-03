@@ -1,3 +1,7 @@
+Forked from https://github.com/yvasiyarov/swagger, will likely deviate into something a bit more specific and opinionated.
+
+Rest currently from original repo:
+
 Swagger UI Generator for Go
 ===========================
 
